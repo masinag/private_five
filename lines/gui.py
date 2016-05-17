@@ -14,10 +14,11 @@ image_dir = "./images"
 images = [ "empty.png", "blue.png", "light-blue.png", "purple.png",
            "yellow.png", "green.png", "orange.png", "red.png"]
 
-def get_image(value):
-    path = os.path.join(image_dir, images[value])
+def get_image(image):
+    path = os.path.join(image_dir, image)
     return path
 
+pixbufs= [gtk.gdk.pixbuf_new_from_file(get_image(img)) for img in images]
 class StoneCell(gtk.Button):
 
     "Il widget che mostra le pedine in attesa di inserimento"
@@ -30,7 +31,7 @@ class StoneCell(gtk.Button):
         self.add(self.image)
 
     def set_value(self, value):
-        pixbuf = gtk.gdk.pixbuf_new_from_file(get_image(value))
+        pixbuf=pixbufs[value]
         pixbuf = pixbuf.scale_simple(30, 30, gtk.gdk.INTERP_BILINEAR)
         self.image.set_from_pixbuf(pixbuf)
 
@@ -56,7 +57,7 @@ class ButtonCell(gtk.Button):
     def set_value(self, value):
         self.value = value
     def update(self, size):
-        pixbuf = gtk.gdk.pixbuf_new_from_file(get_image(self.value))
+        pixbuf = pixbufs[self.value]
         pixbuf = pixbuf.scale_simple(size[0], size[1], gtk.gdk.INTERP_BILINEAR)
         self.image.set_from_pixbuf(pixbuf)
 
@@ -75,7 +76,6 @@ class Grid(gtk.Table):
         gtk.Table.__init__(self, r, c, gtk.TRUE)
         self.set_homogeneous(gtk.TRUE)
         self.set_size_request(400,400)
-
         self.cells = mat = board.Board( size )
         for r,c,v in mat:
             o = Cell( (r,c), back)
@@ -97,15 +97,11 @@ class Grid(gtk.Table):
         self.update_cells()
 
     def update_cells(self):
-
-        self.alloc=self.get_allocation()
-
-        #print self.alloc
         a=self.get_allocation()
+        self.alloc=a
         if a.width<=1 or a.height<=1:
-            size=(400/(self.size[0]+1),308/(self.size[1]+1))
-        else:
-            size=(a.width/(self.size[0]+1),a.height/(self.size[1]+1))
+            return
+        size=(a.height/(self.size[0]+1),a.height/(self.size[1]+1))
         for r,c,v in self.cells:
             self.cells.get_value((r,c)).update(size)
 
@@ -124,18 +120,22 @@ class Window(gui_base.FullWindow):
         c = self._make_content()
         self.set_content(c)
 
-        self.alloc=self.get_allocation()
 
-        self.set_geometry_hints(min_width=600, min_height=600, base_width=600,
-                                base_height=600, min_aspect=1.0, max_aspect=1.0)
+
+        self.set_geometry_hints(min_width=400, min_height=400,
+                                width_inc=50, height_inc=50,
+                                base_width = 400,
+                                base_height=400, min_aspect=1.0, max_aspect=1.0)
+
+
         # altri setting della finestra
-        self.set_size_request(600,600)
+        #self.set_size_request(600,600)
         self.set_resizable(gtk.TRUE)
         self.selected_pos = None
+        self.alloc=self.get_allocation()
         # evento per il ridimensionamento della finestra
-        self.connect('check-resize', self.update_grid)
+        self.connect_after('check-resize', self.on_check_resize)
         self.connect("window-state-event", self.on_window_state_event)
-
         # mostra la situazione iniziale del gioco
         self.update_from_boss()
 
@@ -159,10 +159,10 @@ class Window(gui_base.FullWindow):
         v.pack_end  (self.grid, gtk.TRUE,  gtk.TRUE,  0)
         return v
 
-    def update_grid(self, window):
+    def on_check_resize(self, window):
         if self.get_allocation() != self.alloc:
-            self.alloc=self.get_allocation()
             self.grid.update_cells()
+            self.alloc=self.get_allocation()
 
     def on_window_state_event(self, widget, event, data=None):
         #self.update_grid(widget)
