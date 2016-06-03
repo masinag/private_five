@@ -269,7 +269,10 @@ class Window(gui_base.FullWindow):
 
     # chiamate verso il "boss"
     def do_move(self, fc, tc):
-        self.boss.move(fc, tc)
+        try:
+            self.boss.move(fc, tc)
+        except common.LinesError as e:
+            self.show_message(str(e))
         self.update_from_boss()
 
 def get_gui_for_boss(boss):

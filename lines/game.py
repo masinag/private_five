@@ -29,6 +29,10 @@ class Game:
         self.board.set_value(fc, 0)
         if not self._fill_pos(tc, v):
             self._add_random_stones()
+        if self.board_full():
+            #print "full"
+            raise common.LinesError, "Partita terminata: iniziane una nuova"
+
 
     def _add_random_stones(self):
         vv = self._take_next_values()
@@ -126,6 +130,10 @@ class Game:
 
     def _update_next_values(self):
         self._next_values = common.random_values(_NEXT_VALUES_COUNT, 0)
+
+    def board_full(self):
+        #print len(self.board.get_all_empty())
+        return len(self.board.get_all_empty())==0
 
 #     def add_some_random(self, count = 3):
 #         "Aggiunge COUNT pietre con valori random (non nulli)"
